@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-sand-50 text-gray-800 font-sans antialiased;
+  }
+  .dark body {
+    @apply bg-gray-950 text-gray-100;
+  }
+  /* Pashto text direction & font */
+  .pashto-text {
+    font-family: "Noto Nastaliq Urdu", "Amiri", serif;
+    direction: rtl;
+    line-height: 2.2;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg
+           bg-primary-600 text-white font-semibold
+           hover:bg-primary-700 active:scale-[0.98]
+           transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg
+           border-2 border-primary-600 text-primary-700 dark:text-primary-300
+           font-semibold hover:bg-primary-600 hover:text-white
+           transition-all duration-200;
+  }
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg
+           bg-gold-500 text-white font-semibold
+           hover:bg-gold-600 active:scale-[0.98]
+           transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  .card {
+    @apply bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl
+           border border-gray-100 dark:border-gray-800
+           transition-all duration-300;
+  }
+  .section-title {
+    @apply font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-white;
+  }
+  .input-field {
+    @apply w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700
+           bg-white dark:bg-gray-900 text-gray-900 dark:text-white
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+           transition-all;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { @apply bg-sand-100 dark:bg-gray-900; }
+::-webkit-scrollbar-thumb { @apply bg-primary-400 dark:bg-primary-700 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-primary-600; }

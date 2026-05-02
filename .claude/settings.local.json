@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(node -e ' *)",
+      "Bash(npx vite *)",
+      "Bash(grep -E '\\\\\\\\[\\(boot|ok|cloudinary|fatal|local\\)\\\\\\\\]|LOAD ERROR')",
+      "Bash(grep -E '\\\\\\\\[\\(boot|ok|fatal\\)\\\\\\\\]|LOAD ERROR')"
+    ]
+  }
+}
