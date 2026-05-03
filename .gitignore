@@ -31,5 +31,8 @@ logs/
 *.log
 coverage/
 
+# Locally-uploaded files (Cloudinary handles prod; local-mode is a dev escape hatch)
+pashtohub-backend/uploads/
+
 # Local override files
 *.local

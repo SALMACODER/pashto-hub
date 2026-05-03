@@ -26,10 +26,22 @@ const verifyAccessToken = (token) =>
 const verifyRefreshToken = (token) =>
   jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
 
+/**
+ * In production the frontend (e.g. https://pashto-hub.vercel.app) and the
+ * backend (e.g. https://api.example.com) are on DIFFERENT registrable domains,
+ * which makes auth cookies third-party. Browsers block third-party cookies
+ * unless they are SameSite=None + Secure. So:
+ *   - dev   : sameSite=lax  (same-origin via Vite proxy, no Secure required)
+ *   - prod  : sameSite=none (cross-origin), secure=true (mandatory for None)
+ *
+ * If you ever serve the frontend from the SAME origin as the backend (e.g.
+ * the SPA fallback route in server.js), you can bump sameSite back to 'strict'
+ * for tighter CSRF defence — but 'none' works in both cases.
+ */
 const cookieOptions = (maxAgeMs) => ({
   httpOnly: true,
-  secure:   process.env.NODE_ENV === 'production',  // HTTPS-only in prod
-  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  secure:   process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   maxAge:   maxAgeMs,
   path:     '/',
 });

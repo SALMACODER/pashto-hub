@@ -279,22 +279,40 @@ app.use(hpp());
 
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
+/**
+ * CORS allowlist.
+ *
+ * Build from CLIENT_URL (the production frontend) plus the dev origins.
+ * CLIENT_URL can also be a comma-separated list to support staging + prod.
+ *
+ * Vercel preview deployments get URLs like:
+ *   pashto-hub-git-feature-x-username.vercel.app
+ *
+ * To allow them, set ALLOW_VERCEL_PREVIEWS=true (off by default — opt-in
+ * because it widens the allowlist to any *.vercel.app subdomain of your
+ * project). For production-only, leave it off.
+ */
 const allowedOrigins = [
-  process.env.CLIENT_URL,
+  ...(process.env.CLIENT_URL || '').split(',').map((s) => s.trim()).filter(Boolean),
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
-].filter(Boolean);
+];
+
+const VERCEL_PREVIEW_RE = /^https:\/\/pashto-hub(-[a-z0-9-]+)?\.vercel\.app$/;
+const allowVercelPreviews = String(process.env.ALLOW_VERCEL_PREVIEWS || '').toLowerCase() === 'true';
 
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);                       // server-to-server / curl
     if (allowedOrigins.includes(origin)) return cb(null, true);
+    if (allowVercelPreviews && VERCEL_PREVIEW_RE.test(origin)) return cb(null, true);
     return cb(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,                                          // required for httpOnly cookies
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization','X-CSRF-Token'],
+  exposedHeaders: ['Content-Type'],
 }));
 
 // ----------------------------------------------------------------------------
@@ -348,11 +366,17 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   // identifier is just additional binding.
   getSessionIdentifier: (req) => req.ip || 'anonymous',
 
-  cookieName: process.env.NODE_ENV === 'production' ? '__Host-psifi.x-csrf-token' : 'x-csrf-token',
+  // The __Host- prefix locks the cookie to the EXACT origin — fine when the
+  // SPA is served from the same origin as the backend, but breaks cross-site
+  // SameSite=None cookies that the frontend on Vercel needs. So drop the
+  // prefix in production too and rely on Secure + SameSite=None.
+  cookieName: 'x-csrf-token',
   cookieOptions: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    // 'none' so the cookie is sent on the cross-site Vercel→backend request.
+    // Must be paired with secure:true (handled above in production).
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
   },
   size: 64,
