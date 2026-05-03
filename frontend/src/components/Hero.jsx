@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom'
 import { FiArrowRight, FiBookOpen, FiPlayCircle } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 
-// ✅ Mountain image import karo — apni image ka sahi path likho
-import mountainImg from '../assets/mountain.jpg'
+// Folder name on disk is `Assets/` (capital A). Linux is case-sensitive,
+// so this MUST match exactly or Vercel's build fails with "Could not resolve".
+import mountainImg from '../Assets/mountain.jpg'
 
 const Hero = () => {
   const { t, language } = useLanguage()
