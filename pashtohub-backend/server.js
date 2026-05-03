@@ -434,14 +434,19 @@ app.get('/api/csrf', (req, res) => {
   res.json({ success: true, data: { csrfToken: generateCsrfToken(req, res) } });
 });
 
-// Apply CSRF to all state-changing /api requests EXCEPT login/register/refresh
-// (those use rate limiting + credential check, no session cookie to ride yet).
-// Match by suffix so the check survives any base-URL prefix variation.
-const csrfExemptSuffixes = ['/auth/login', '/auth/register', '/auth/refresh'];
+// Apply CSRF to all state-changing /api requests EXCEPT the unauthenticated
+// auth endpoints (the user has no CSRF cookie yet at those points). Match
+// by suffix so the check survives any base-URL prefix variation.
+//
+// reset-password uses /reset-password/:token (a token segment that varies),
+// so we ALSO accept any path that contains the prefix.
+const csrfExemptSuffixes = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/forgot-password'];
+const csrfExemptIncludes = ['/auth/reset-password/'];
 app.use('/api', (req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
   const path = (req.originalUrl || '').split('?')[0];
   if (csrfExemptSuffixes.some((s) => path.endsWith(s))) return next();
+  if (csrfExemptIncludes.some((p) => path.includes(p))) return next();
   return doubleCsrfProtection(req, res, next);
 });
 

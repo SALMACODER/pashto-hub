@@ -9,8 +9,10 @@ const Home          = lazy(() => import('./pages/Home'));
 const Books         = lazy(() => import('./pages/Books'));
 const Learn         = lazy(() => import('./pages/Learn'));
 const Dictionary    = lazy(() => import('./pages/Dictionary'));
-const SignIn        = lazy(() => import('./pages/SignIn'));
-const SignUp        = lazy(() => import('./pages/SignUp'));
+const SignIn          = lazy(() => import('./pages/SignIn'));
+const SignUp          = lazy(() => import('./pages/SignUp'));
+const ForgotPassword  = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword   = lazy(() => import('./pages/ResetPassword'));
 const Contact       = lazy(() => import('./pages/Contact'));
 const About         = lazy(() => import('./pages/About'));
 const LessonDetail  = lazy(() => import('./pages/LessonDetail'));
@@ -61,6 +63,8 @@ function App() {
                           <Route path="/dictionary" element={<Dictionary />} />
                           <Route path="/signin" element={<SignIn />} />
                           <Route path="/signup" element={<SignUp />} />
+                          <Route path="/forgot-password" element={<ForgotPassword />} />
+                          <Route path="/reset-password/:token" element={<ResetPassword />} />
                           <Route path="/contact" element={<Contact />} />
                           <Route path="/about" element={<About />} />
                           <Route path="/leaders" element={<Leaders />} />

@@ -27,4 +27,18 @@ const loginRules = [
     .isLength({ max: 128 }),
 ];
 
-module.exports = { registerRules, loginRules };
+const forgotPasswordRules = [
+  body('email')
+    .isEmail().withMessage('Valid email is required')
+    .normalizeEmail(),
+];
+
+const resetPasswordRules = [
+  body('password')
+    .isLength({ min: 8, max: 128 }).withMessage('Password must be 8–128 characters')
+    .matches(/[A-Z]/).withMessage('Password must contain an uppercase letter')
+    .matches(/[a-z]/).withMessage('Password must contain a lowercase letter')
+    .matches(/[0-9]/).withMessage('Password must contain a number'),
+];
+
+module.exports = { registerRules, loginRules, forgotPasswordRules, resetPasswordRules };

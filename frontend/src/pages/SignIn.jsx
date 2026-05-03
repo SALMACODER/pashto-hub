@@ -190,14 +190,14 @@ const SignIn = () => {
                   {t('auth.remember')}
                 </span>
               </label>
-              <button
-                type="button"
+              <Link
+                to="/forgot-password"
                 className={`text-sm text-primary-600 dark:text-gold-400 hover:underline ${
                   isPS ? 'pashto-text' : ''
                 }`}
               >
                 {t('auth.forgot')}
-              </button>
+              </Link>
             </div>
 
             <button

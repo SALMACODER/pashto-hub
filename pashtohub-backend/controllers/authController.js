@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const {
@@ -7,6 +8,7 @@ const {
   verifyRefreshToken,
   REFRESH_COOKIE,
 } = require('../utils/generateToken');
+const { sendMail, buildResetEmail } = require('../services/emailService');
 
 /**
  * @desc   Register a new user
@@ -108,4 +110,98 @@ const getMe = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { user: req.user } });
 });
 
-module.exports = { registerUser, loginUser, refreshToken, logoutUser, getMe };
+/**
+ * @desc   Send password-reset email.
+ * @route  POST /api/auth/forgot-password
+ * @access Public
+ *
+ * Always returns 200 with the same message regardless of whether the email
+ * exists in the DB. This is intentional — revealing "no such user" lets an
+ * attacker enumerate valid accounts. The actual email is only sent when the
+ * user is found.
+ */
+const forgotPassword = asyncHandler(async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const genericResponse = {
+    success: true,
+    message: 'If that email is registered, a reset link is on its way.',
+  };
+
+  const user = await User.findOne({ email });
+  if (!user) return res.json(genericResponse);
+
+  // Mint and persist the token (hash on doc, plain in URL)
+  const plainToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });   // skip validators — we're not changing user-edited fields
+
+  const clientUrl = (process.env.CLIENT_URL || '').split(',')[0].trim() || 'http://localhost:5173';
+  const resetUrl  = `${clientUrl.replace(/\/+$/, '')}/reset-password/${plainToken}`;
+
+  try {
+    const { text, html } = buildResetEmail({ name: user.name, resetUrl });
+    await sendMail({
+      to: user.email,
+      subject: 'Reset your PashtoHub password',
+      text,
+      html,
+    });
+    res.json(genericResponse);
+  } catch (err) {
+    // Email failed → wipe the token so the user can try again immediately.
+    user.resetPasswordToken  = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+    console.error('[auth] reset email send failed:', err.message);
+    res.status(500);
+    throw new Error('Could not send reset email — please try again later.');
+  }
+});
+
+/**
+ * @desc   Set a new password using a valid reset token.
+ * @route  PUT /api/auth/reset-password/:token
+ * @access Public
+ *
+ * The :token in the URL is the PLAIN token from the email. We hash it and
+ * look up by hash + unexpired expiry. The User model's pre('save') hook
+ * bcrypts the new password, so we just set it directly.
+ *
+ * On success we DON'T auto-login — we want the user to consciously sign in
+ * with their new password. This also avoids minting auth cookies via a
+ * link an attacker controls (defence in depth).
+ */
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  const hashed = crypto.createHash('sha256').update(String(token)).digest('hex');
+  const user = await User.findOne({
+    resetPasswordToken:  hashed,
+    resetPasswordExpire: { $gt: new Date() },
+  }).select('+password +resetPasswordToken +resetPasswordExpire');
+
+  if (!user) {
+    res.status(400);
+    throw new Error('Reset link is invalid or has expired. Request a new one.');
+  }
+
+  user.password = password;                 // pre('save') hook bcrypts it
+  user.resetPasswordToken  = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  res.json({
+    success: true,
+    message: 'Password updated. You can now sign in with your new password.',
+  });
+});
+
+module.exports = {
+  registerUser,
+  loginUser,
+  refreshToken,
+  logoutUser,
+  getMe,
+  forgotPassword,
+  resetPassword,
+};

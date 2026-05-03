@@ -67,6 +67,19 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
 };
 
+/**
+ * Generate a fresh password-reset token.
+ *  - Returns the PLAIN token (caller emails this in a URL).
+ *  - Stores the SHA-256 HASH on the doc + a 1-hour expiry.
+ *  - Caller MUST `await user.save()` after this.
+ */
+userSchema.methods.createPasswordResetToken = function () {
+  const plain = crypto.randomBytes(32).toString('hex');
+  this.resetPasswordToken  = crypto.createHash('sha256').update(plain).digest('hex');
+  this.resetPasswordExpire = new Date(Date.now() + 60 * 60 * 1000);   // +1 hour
+  return plain;
+};
+
 // Clean JSON output — strip sensitive fields
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
