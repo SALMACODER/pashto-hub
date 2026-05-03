@@ -249,6 +249,21 @@ try {
 
 const app = express();
 
+// ----------------------------------------------------------------------------
+// Trust the first proxy in front of us (Render, Railway, fly.io, nginx etc.).
+// Without this:
+//   • req.ip returns the proxy's INTERNAL IP (10.x / 172.x), which can flip
+//     between requests if the host scales out → CSRF token signed against
+//     IP-A is rejected when validated against IP-B. Manifests as "Invalid or
+//     missing CSRF token" on every upload.
+//   • express-rate-limit treats every client as the same IP and rate-limits
+//     them as one bucket.
+// '1' = trust the immediate upstream proxy. If you ever stack multiple proxies
+// (Cloudflare → Render), bump to a higher number or use 'true'.
+// In dev (no proxy in front) this is a no-op — req.ip already comes from the socket.
+// ----------------------------------------------------------------------------
+app.set('trust proxy', 1);
+
 // ---- security middleware ----
 // Body size capped at 10kb. Anything large (book PDFs, images) goes through dedicated upload routes.
 app.use(express.json({ limit: '10kb' }));
@@ -360,11 +375,20 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   // validation. Previously we used `req.cookies.access_token`, but that JWT
   // changes on login, logout, and every 15 minutes when the access token
   // rotates via /auth/refresh — so any cached CSRF token would silently
-  // become invalid. We use req.ip instead, which is stable for the lifetime
-  // of a session at one network location. The double-submit pair (httpOnly
-  // cookie + JS-set header) remains the primary protection — the session
-  // identifier is just additional binding.
-  getSessionIdentifier: (req) => req.ip || 'anonymous',
+  // become invalid.
+  //
+  // Now we use req.ip (combined with `trust proxy`, this resolves to the real
+  // client IP). Falls through a chain so we never sign with a flapping value:
+  //   1. req.ip                      (Express, post-trust-proxy)
+  //   2. X-Forwarded-For first hop   (defensive, in case trust proxy is off)
+  //   3. socket remote address       (last resort, dev)
+  //   4. constant 'anonymous'        (so nothing is ever undefined)
+  // The double-submit pair (httpOnly cookie + JS-set header) is the actual
+  // protection; the session identifier is just additional binding.
+  getSessionIdentifier: (req) => {
+    const xff = (req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    return req.ip || xff || req.socket?.remoteAddress || 'anonymous';
+  },
 
   // The __Host- prefix locks the cookie to the EXACT origin — fine when the
   // SPA is served from the same origin as the backend, but breaks cross-site
