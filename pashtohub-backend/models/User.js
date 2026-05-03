@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema(
   {
@@ -38,9 +39,20 @@ const userSchema = new mongoose.Schema(
       enum: ['en', 'ps'],
       default: 'en',
     },
+
+    // ── Password reset ────────────────────────────────────────────────────
+    // The PLAIN token is sent in the email link; the SHA-256 HASH of it is
+    // stored here. If the DB ever leaks, an attacker still can't use the
+    // tokens because they only have hashes.
+    resetPasswordToken:  { type: String, select: false },
+    resetPasswordExpire: { type: Date,   select: false },
   },
   { timestamps: true },
 );
+
+// Index speeds up the `findOne({ resetPasswordToken, resetPasswordExpire: { $gt: now } })`
+// lookup the reset endpoint runs on every submit.
+userSchema.index({ resetPasswordToken: 1, resetPasswordExpire: 1 });
 
 // Hash password before save. Cost 12 ≈ 250–400ms on 2025 hardware (industry standard).
 userSchema.pre('save', async function (next) {

@@ -111,6 +111,22 @@ const PdfUpload = ({
         </div>
       )}
 
+      {/* Mode hint — confirms destination BEFORE the user picks a file. */}
+      {showModeToggle && (
+        <p className="flex items-center gap-1.5 mb-2 text-xs text-gray-600 dark:text-gray-400">
+          <span>Will upload to:</span>
+          {mode === 'cloudinary' ? (
+            <span className="inline-flex items-center gap-1 font-semibold text-primary-600 dark:text-primary-400">
+              <FiCloud size={11} /> Cloudinary
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 font-semibold text-primary-600 dark:text-primary-400">
+              <FiHardDrive size={11} /> Local disk
+            </span>
+          )}
+        </p>
+      )}
+
       <div
         onClick={() => !busy && !hasFile && inputRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
