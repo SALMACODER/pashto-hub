@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Custom Pashto font — MS Shamla (Megasoft).
+   Folder name on disk is "Assets/" (capital A). Linux is case-sensitive,
+   so this MUST match exactly or the prod build can't find the file.
+   font-display: swap → fallback renders immediately, real font swaps in
+   when ready (no FOIT / blank text while downloading).
+   ───────────────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "MS Shamla";
+  src: url("./Assets/fonts/MS_Shamla__Megasoft_.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -12,11 +27,14 @@
   .dark body {
     @apply bg-gray-950 text-gray-100;
   }
-  /* Pashto text direction & font */
+
+  /* Every Pashto block should get .pashto-text. The font stack starts with
+     MS Shamla, falls back to Noto Nastaliq Urdu (Google Fonts, loaded in
+     index.html), then a generic serif. */
   .pashto-text {
-    font-family: "Noto Nastaliq Urdu", "Amiri", serif;
+    font-family: "MS Shamla", "Noto Nastaliq Urdu", serif;
     direction: rtl;
-    line-height: 2.2;
+    line-height: 2;
   }
 }
 

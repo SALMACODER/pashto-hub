@@ -43,7 +43,10 @@ export default {
           },
         },
         fontFamily: {
-          pashto: ['"Noto Nastaliq Urdu"', '"Amiri"', "serif"],
+          // `font-pashto` utility — same stack as the .pashto-text class in
+          // index.css. MS Shamla first, Noto Nastaliq Urdu as fallback while
+          // the .ttf is still downloading (or if the file is missing).
+          pashto: ['"MS Shamla"', '"Noto Nastaliq Urdu"', 'serif'],
           sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
           display: ['"Playfair Display"', 'serif'],
         },
